@@ -95,6 +95,13 @@ Speed comes from how many agents run at once (`--concurrency`, default 10) and h
 
 Agents arrive in the order a real launch happens. In a cohort, creators (builders) arrive in the first third of the `--spread-minutes` window, and the audience (consumers, curators, mobile users, lurkers) from a quarter of the way in to the end, so the audience can find skills that new creators have just published. In a return wave, the audience comes back first (over the first minute) and authors 3 to 4 minutes later, after others have had time to comment on or fork their skills. Nobody is told what to do: agents still choose freely what to look at and react to. With an 8-minute window, about 70 of Cohort A's 75 audience agents arrive after the first skills are published.
 
+## What the model is told
+
+- **Personas are described in plain words** ("a developer looking for skills to use"), never by their internal label: a model reads "consumer" as "not a developer".
+- **Shared-link visitors have the need that matches their skill** ("You're working on speeding up some slow SQL queries. A friend who knows that shared this skill with you."). Real people get a shared link because a friend knows they need it; without a need, an agent can leave after one look.
+- **Element numbers are fresh in every snapshot.** Each snapshot erases the previous numbers before giving out new ones, so an element that's no longer listed (a header button under a dialog, say) can't share a number with one that is.
+- **Covered elements aren't offered.** An element whose centre is on screen but covered by something else (Clerk's checkout drawer, a modal) isn't listed until it's uncovered, so agents don't click a button hidden under a drawer. Off-screen elements are still listed, because clicking scrolls them into view. If a click still fails, the trace keeps Playwright's line saying what covered the element.
+
 ## Why every persona has an interest
 
 All agents run on the same model, so agents with identical goals behave like copies of one person: given the same page, they all pick the same "obvious" option (in one test, 29 of 30 curator comments went to the most-starred skill). Consumers, mobile users and curators each get a topic of their own, so their choices spread out the way a real audience's do. The topic only sets what they care about: what they actually do is still up to them.

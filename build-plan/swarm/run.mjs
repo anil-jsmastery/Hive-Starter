@@ -119,9 +119,19 @@ That only shortens the list, not the field: if a field's length matches your tex
 Use "done" only when your goal is truly achieved. Use "give_up" when a real person like you would leave.
 Never invent element ids. Never type anything you were not given or would not know.`;
 
+// How each persona is described to the model, in plain words. Internal labels like
+// "consumer" read as "not a developer" to a model, so they're never shown.
+const ROLE = {
+  consumer: 'a developer looking for skills to use',
+  mobile: 'a developer looking for skills to use',
+  builder: 'a developer who writes skills and shares them',
+  curator: 'a developer who enjoys trying skills and giving feedback',
+  lurker: 'a developer having a first look around',
+};
+
 function prompt(p, obs, history, step) {
   const lines = [
-    `PERSONA: ${p.name}, ${p.type}${p.mobile ? ', on a phone' : ''}. Arrived from: ${p.source}.`,
+    `PERSONA: ${p.name}, ${ROLE[p.type] || 'a developer'}${p.mobile ? ', on a phone' : ''}. Arrived from: ${p.source}.`,
     `GOAL: ${p.goal}`,
     RETURN_OF
       ? `YOU ALREADY HAVE A HIVE ACCOUNT: email ${p.email}, username ${p.username}, password ${p.password}. You may still be signed in; if not, sign in (don't sign up again).`
@@ -281,7 +291,10 @@ async function runAgent(browser, p) {
         const shown = secret ? ' (your full password)' : a.text && a.action !== 'select' ? ` "${String(a.text).slice(0, 30)}"` : '';
         history.push(`${step + 1}. ${a.action}${a.target ? ` [${a.target}]` : ''}${shown} (${a.thought || ''})`);
       } catch (e) {
-        const why = String(e?.message || e).split('\n')[0].slice(0, 160);
+        // Keep Playwright's first line, plus the line saying what covered the element, if any.
+        const lines = String(e?.message || e).split('\n');
+        const blocker = lines.find((l) => l.includes('intercepts pointer events'));
+        const why = (lines[0] + (blocker ? ` (${blocker.trim().slice(0, 120)})` : '')).slice(0, 280);
         // A frame being replaced (Clerk's checkout reloading its card form) or the
         // agent's own browser closing interrupts an action without the agent doing
         // anything wrong. Those are logged, but not counted as failed actions.

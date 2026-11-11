@@ -15,22 +15,38 @@ function collectInFrame({ fi, limit }) {
     const s = getComputedStyle(el);
     return s.visibility !== 'hidden' && s.display !== 'none' && Number(s.opacity) > 0.05;
   };
+  // An element whose centre is on screen but covered by something else (a drawer, a
+  // modal, an overlay) can't be clicked, so it isn't offered until it's uncovered.
+  // Off-screen elements are still listed: clicking one scrolls it into view.
+  const covered = (el) => {
+    const r = el.getBoundingClientRect();
+    const x = r.left + r.width / 2;
+    const y = r.top + r.height / 2;
+    if (x < 0 || y < 0 || x >= window.innerWidth || y >= window.innerHeight) return false;
+    const top = document.elementFromPoint(x, y);
+    if (!top) return false;
+    return !(top === el || el.contains(top) || top.contains(el));
+  };
   const clean = (s, n = 70) => (s || '').replace(/\s+/g, ' ').trim().slice(0, n);
 
   // Styled radio and checkbox cards often hide the real input (opacity 0) and show a
   // <label> instead. People click the label, so the snapshot lists the visible label
   // in place of the hidden input, with the input's type and checked state.
+  // Erase the numbers from the last snapshot first. Otherwise an element that's no longer
+  // listed (say, a header button now under a dialog) keeps its old number, and a newly
+  // listed element can get the same one, so a click finds the wrong element.
+  for (const old of document.querySelectorAll('[data-sw]')) old.removeAttribute('data-sw');
   const labelFor = (el) => (el.labels && el.labels[0]) || el.closest('label');
   const seen = new Set();
   const picks = [];
   for (const el of document.querySelectorAll(SELECTOR)) {
     if (seen.has(el)) continue;
     seen.add(el);
-    if (visible(el)) { picks.push({ el, target: el }); continue; }
+    if (visible(el)) { if (!covered(el)) picks.push({ el, target: el }); continue; }
     const t = (el.getAttribute('type') || '').toLowerCase();
     if (el.tagName === 'INPUT' && (t === 'radio' || t === 'checkbox')) {
       const lab = labelFor(el);
-      if (lab && visible(lab) && !seen.has(lab)) { seen.add(lab); picks.push({ el, target: lab }); }
+      if (lab && visible(lab) && !covered(lab) && !seen.has(lab)) { seen.add(lab); picks.push({ el, target: lab }); }
     }
   }
   const els = picks.slice(0, limit);

@@ -19,6 +19,16 @@ const TOPICS = ['code review', 'Jest tests', 'slow SQL queries', 'commit message
 const SHARED_SLUGS = ['nextjs-auth-review', 'code-review-buddy', 'sql-query-tuner',
   'commit-message-writer', 'react-perf-audit'];
 
+// Friends share a skill because they know you need it, so each shared-link visitor
+// has the need that matches the skill they're sent. They still decide whether it's good.
+const SHARED_NEEDS = {
+  'nextjs-auth-review': 'checking the authentication in your Next.js app',
+  'code-review-buddy': 'getting better reviews on your pull requests',
+  'sql-query-tuner': 'speeding up some slow SQL queries',
+  'commit-message-writer': 'writing clearer commit messages',
+  'react-perf-audit': 'making a slow React app faster',
+};
+
 const SOURCES = ['youtube', 'newsletter', 'x', 'direct'];
 
 // Share of each persona type in a cohort.
@@ -109,7 +119,7 @@ export function buildPersonas({ n, cohort, seed = 42 }) {
           p.variant = 'consumer-shared';
           p.startPath = `/s/${slug}?ref=share`;
           p.sharedSlug = slug;
-          p.goal = 'A friend shared this skill with you. Decide whether it is useful to you, and install it if it is.';
+          p.goal = `You're working on ${SHARED_NEEDS[slug]}. A friend who knows that shared this skill with you. Decide whether it is useful to you, and install it if it is.`;
           p.success = 'install-shared';
         } else {
           p.goal = `Find a skill that helps with ${topic} and install it. You have never used Hive before.`;
