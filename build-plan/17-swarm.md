@@ -113,6 +113,10 @@ Clerk development instances hold at most **100 users**, counting every agent tha
 
 **Running faster:** for the recorded run, use `--concurrency=30`. Before the real cohort, run a **speed check**: 30 test agents at once (`node swarm/run.mjs --cohort=T --agents=30 --concurrency=30 --url=<deployed URL>`, about 5 minutes, about $0.12), then `node swarm/cleanup.mjs --yes`. A 10-agent batch can't show what 30 at once does. If its Reliability line shows climbing API retries (the model provider is rate-limiting) or failed sign-ups (Clerk is throttling), use `--concurrency=20` instead. Then Cohort A: `--agents=100 --spread-minutes=8 --concurrency=30`, about 11 minutes, about $0.30. Agents arrive like a real launch: builders first, the audience after (see the harness README's "Arrival order"), so new skills get found. Cost doesn't depend on speed.
 
+## Before Cohort A: a clean shelf
+
+After the cleanup that comes before Cohort A, reset the shelf with `npm run db:seed` (Step 04's script): it leaves exactly the 30 seed skills and removes every other skill, star, comment, follow, notification and activity, while real users' profiles stay. Without it, the test skills you published while building Steps 09–16 (forks made as `ada`, a "Test Org Skill") show at the top of Explore, and agents treat them as real: a fork with the same title can win over the original. With it, every viewer's Cohort A starts from the same catalog.
+
 ## Checks
 
 - `swarm/` matches `build-plan/swarm/` exactly (`diff -r build-plan/swarm swarm` shows only the new `.env`, `state/` and `results/`).

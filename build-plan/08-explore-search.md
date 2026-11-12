@@ -29,10 +29,11 @@ export type SkillCardData = {
   visibility: 'public' | 'private';
   author: { handle: string } | null;
   org: { slug: string; name: string } | null;
+  forked_from: { author: { handle: string } | null } | null;
 };
 
 export const CARD_FIELDS =
-  'slug, title, description, tags, stack, stars_count, visibility, author:profiles!skills_author_id_fkey(handle), org:organizations!skills_org_id_fkey(slug, name)';
+  'slug, title, description, tags, stack, stars_count, visibility, author:profiles!skills_author_id_fkey(handle), org:organizations!skills_org_id_fkey(slug, name), forked_from:forked_from_id(author:profiles!skills_author_id_fkey(handle))';
 
 export async function searchSkills(q: string, stack: string | null): Promise<SkillCardData[]> {
   const supabase = await createServerSupabase();
@@ -44,7 +45,7 @@ export async function searchSkills(q: string, stack: string | null): Promise<Ski
 }
 ```
 
-Every embedded relation in this plan names its foreign key (for example `profiles!skills_author_id_fkey`). Skills and profiles are linked in several ways (author, stars, comments), so without the hint Supabase can't tell which link you mean.
+Every embedded relation in this plan names its foreign key (for example `profiles!skills_author_id_fkey`). Skills and profiles are linked in several ways (author, stars, comments), so without the hint Supabase can't tell which link you mean. A fork's original is the same table, so `forked_from:forked_from_id(…)` embeds it through its column: the skill this one was forked from, and that skill's author.
 
 **The URL is the state:** `/explore?q=<query>&stack=<stack>`. `stack` is missing or one of `STACKS`; anything else counts as "All".
 
@@ -61,7 +62,7 @@ Every embedded relation in this plan names its foreign key (for example `profile
 
 **`SkillCard`** (client component, so it can track clicks), exactly as DESIGN.md › SkillCard. The whole card is one `<Link className="skill" href="/s/[slug]">` (nested links aren't allowed, so the author and team are shown as text; their pages are linked from the skill page):
 
-- `.skill-top`: `<span className="glyph"><SkillGlyph title={title} stars={stars_count} /></span>` and `.skill-name` with `h2` title and `span.author` "@{author.handle}".
+- `.skill-top`: `<span className="glyph"><SkillGlyph title={title} stars={stars_count} /></span>` and `.skill-name` with `h2` title and `span.author`: "@{author.handle}", or "forked from @{forked_from.author.handle}" when the skill is a fork (DESIGN.md › SkillCard), so a fork with the same title can't be mistaken for the original.
 - `p`: the description.
 - `.meta`: `span.fw` stack, `span.tag` team name when `org` is set, `span.priv` with `<LockIcon />` and "Private" when `visibility` is `private`, a `span.tag` per tag, then `span.stars` (`aria-label="{n} stars"`) with `<StarIcon />` and the count.
 - When the card receives a `query` prop, clicking it calls `trackClient('search_result_opened', { query, rank, slug })`, where `rank` is the 1-based position.
@@ -81,6 +82,7 @@ Every embedded relation in this plan names its foreign key (for example `profile
 - Searching "terraform" shows the empty state and sends `search_performed` with `result_count: 0`.
 - Changing the stack filter while a query is set sends a new `search_performed`.
 - Opening `/explore` with no query sends no search event.
+- A fork's card says "forked from @{original author}" instead of "@{handle}" (check with any seed skill you fork in Step 10; profile pages use the same `SkillCard`, while the dashboard has its own rows, which already say "Forked from @…").
 - With no search, Explore lists skills newest first: the card order matches `created_at`, newest first (check the first three with the Supabase MCP server). A search still ranks by relevance, then stars.
 
 ## Update project memory
@@ -91,7 +93,7 @@ Append this block to the end of `MEMORY.md`, **VERBATIM**:
 ## After step 08
 - /explore: URL state (q, stack), search form, stack filter pills, SkillCard list from searchSkills() in lib/queries/search.ts (search_skills RPC).
 - Events: search_performed (TrackOnMount keyed by query and stack), search_result_opened (SkillCard).
-- SkillCard shows author, stack, team badge, Private badge, tags and stars.
+- SkillCard shows author (or "forked from @handle" for a fork), stack, team badge, Private badge, tags and stars.
 ```
 
 ## Finish this step
